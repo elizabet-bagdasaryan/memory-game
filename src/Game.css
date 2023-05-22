@@ -1,0 +1,28 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+  background-color: lightblue;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 50px;
+}
+
+.card.selected {
+  background-color: lightgreen;
+}
+
+.card.matched {
+  background-color: lightgray;
+}
+
+.icon {
+  background-color: red;
+}
