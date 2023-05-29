@@ -1,18 +1,20 @@
 .grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  gap: 20px;
 }
 
 .card {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 50px;
-  background-color: lightblue;
+  height: 20px;
+  background-color: #304859;
   cursor: pointer;
   border-radius: 50%;
-  width: 50px;
+  width: 20px;
+  font-size: 36px;
+  font-weight: bold;
 }
 
 .card.selected {
@@ -20,7 +22,7 @@
 }
 
 .card.matched {
-  background-color: lightgray;
+  background-color: #bcced9;
 }
 
 .icon {

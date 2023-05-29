@@ -5,7 +5,7 @@ import Game from "./Game";
 function App() {
   return (
     <>
-      <Game gridSize={4} cardType="icons" />
+      <Game gridSize={4} />
     </>
   );
 }
