@@ -8,13 +8,24 @@ import TerrainIcon from "@mui/icons-material/Terrain";
 import StarRateIcon from "@mui/icons-material/StarRate";
 import WbSunnyIcon from "@mui/icons-material/WbSunny";
 import TsunamiIcon from "@mui/icons-material/Tsunami";
+import ThunderstormIcon from "@mui/icons-material/Thunderstorm";
+import SportsBasketballIcon from "@mui/icons-material/SportsBasketball";
+import SportsBarIcon from "@mui/icons-material/SportsBar";
+import LightbulbIcon from "@mui/icons-material/Lightbulb";
+import FavoriteIcon from "@mui/icons-material/Favorite";
+import ExtensionIcon from "@mui/icons-material/Extension";
+import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
+import LunchDiningIcon from "@mui/icons-material/LunchDining";
+import ThermostatIcon from "@mui/icons-material/Thermostat";
+import PublicIcon from "@mui/icons-material/Public";
 
-const Game = ({ gridSize }) => {
+const Game = () => {
   const [cards, setCards] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
   const [matchedCards, setMatchedCards] = useState([]);
   const [turn, setTurn] = useState(1);
-  const [cardType, setCardType] = useState("icons"); // Default card type is "icons"
+  const [cardType, setCardType] = useState("icons");
+  const [gridSize, setGridSize] = useState(4);
 
   const generateCards = useCallback(() => {
     const contentArray =
@@ -44,7 +55,7 @@ const Game = ({ gridSize }) => {
   };
 
   const generateIconArray = () => {
-    return [
+    const icons = [
       "AcUnitIcon",
       "NightsStayIcon",
       "FlashOnIcon",
@@ -53,12 +64,28 @@ const Game = ({ gridSize }) => {
       "StarRateIcon",
       "WbSunnyIcon",
       "TsunamiIcon",
+      "SportsBasketballIcon",
+      "SportsBarIcon",
+      "ThunderstormIcon",
+      "LightbulbIcon",
+      "FavoriteIcon",
+      "ExtensionIcon",
+      "LocalFireDepartmentIcon",
+      "LunchDiningIcon",
+      "ThermostatIcon",
+      "PublicIcon ",
     ];
+
+    const selectedIcons = icons.slice(0, (gridSize * gridSize) / 2);
+
+    return selectedIcons;
   };
+
   const generateNumberArray = () => {
-    const numbers = Array.from(Array(8).keys()).map((num) =>
-      (num + 1).toString()
+    const numbers = Array.from(Array((gridSize * gridSize) / 2).keys()).map(
+      (num) => (num + 1).toString()
     );
+
     return numbers;
   };
 
@@ -108,7 +135,7 @@ const Game = ({ gridSize }) => {
         return <span>{card.content}</span>;
       }
     }
-    return null;
+    return <span></span>;
   };
 
   const handleCardTypeChange = (type) => {
@@ -136,10 +163,31 @@ const Game = ({ gridSize }) => {
         return WbSunnyIcon;
       case "TsunamiIcon":
         return TsunamiIcon;
+      case "SportsBasketballIcon":
+        return SportsBasketballIcon;
+      case "SportsBarIcon":
+        return SportsBarIcon;
+      case "ThunderstormIcon":
+        return ThunderstormIcon;
+      case "LightbulbIcon":
+        return LightbulbIcon;
+      case "FavoriteIcon":
+        return FavoriteIcon;
+      case "ExtensionIcon":
+        return ExtensionIcon;
+      case "LocalFireDepartmentIcon":
+        return LocalFireDepartmentIcon;
+      case "LunchDiningIcon":
+        return LunchDiningIcon;
+      case "ThermostatIcon":
+        return ThermostatIcon;
+      case "PublicIcon ":
+        return PublicIcon;
       default:
         return null;
     }
   };
+
   const handleGridSizeChange = (size) => {
     setGridSize(size);
     generateCards();
@@ -159,12 +207,22 @@ const Game = ({ gridSize }) => {
         </button>
         <div>
           Grid Size:{" "}
-          <button onClick={() => handleGridSizeChange(4)}>4x4</button>
-          <button onClick={() => handleGridSizeChange(6)}>6x6</button>
+          <button
+            className={gridSize === 4 ? "selected" : ""}
+            onClick={() => handleGridSizeChange(4)}
+          >
+            4x4
+          </button>
+          <button
+            className={gridSize === 6 ? "selected" : ""}
+            onClick={() => handleGridSizeChange(6)}
+          >
+            6x6
+          </button>
         </div>
       </div>
       <div>Turn: {turn}</div>
-      <div className="grid">
+      <div className={`grid grid-${gridSize}`}>
         {cards.map((card) => (
           <div
             key={card.id}
@@ -179,10 +237,6 @@ const Game = ({ gridSize }) => {
       </div>
     </div>
   );
-};
-
-const IconComponent = ({ name }) => {
-  return <i className={`icon ${name}`} />;
 };
 
 export default Game;
