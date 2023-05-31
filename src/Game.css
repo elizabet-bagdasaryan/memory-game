@@ -9,7 +9,9 @@
   grid-template-columns: repeat(6, 1fr);
   gap: 20px;
 }
-
+.grid-6 .card {
+  font-size: 24px;
+}
 .card {
   display: flex;
   align-items: center;
@@ -23,14 +25,6 @@
   font-weight: bold;
 }
 
-.card.selected {
-  background-color: lightgreen;
-}
-
 .card.matched {
   background-color: #bcced9;
-}
-
-.icon {
-  background-color: red;
 }

@@ -26,6 +26,9 @@ const Game = () => {
   const [turn, setTurn] = useState(1);
   const [cardType, setCardType] = useState("icons");
   const [gridSize, setGridSize] = useState(4);
+  const [time, setTime] = useState(120);
+  const [turns, setTurns] = useState(0);
+  const [completedTime, setCompletedTime] = useState(null);
 
   const generateCards = useCallback(() => {
     const contentArray =
@@ -107,6 +110,7 @@ const Game = () => {
 
     setCards(newCards);
     setSelectedCards([...selectedCards, card]);
+    setTurns(turns + 1);
 
     if (selectedCards.length === 1) {
       if (selectedCards[0].content === card.content) {
@@ -119,15 +123,28 @@ const Game = () => {
           }
           return c;
         });
+
         setCards(updatedCards);
         setSelectedCards([]);
         setTurn(turn + 1);
+
+        if (matchedCards.length === cards.length - 2) {
+          setCompletedTime(120 - time);
+          checkGameStatus();
+        }
       }, 1000);
     }
   };
 
   const renderCardContent = (card) => {
-    if (card.isFlipped) {
+    if (matchedCards.includes(card.id)) {
+      if (cardType === "icons") {
+        const IconComponent = getIconComponent(card.content);
+        return <IconComponent />;
+      } else if (cardType === "numbers") {
+        return <span>{card.content}</span>;
+      }
+    } else if (card.isFlipped) {
       if (cardType === "icons") {
         const IconComponent = getIconComponent(card.content);
         return <IconComponent />;
@@ -196,6 +213,50 @@ const Game = () => {
     setTurn(1);
   };
 
+  const startTimer = () => {
+    const timer = setInterval(() => {
+      setTime((prevTime) => prevTime - 1);
+    }, 1000);
+
+    return timer;
+  };
+
+  useEffect(() => {
+    const timer = startTimer();
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, []);
+
+  const checkGameStatus = () => {
+    if (matchedCards.length === cards.length) {
+      alert("Congratulations! You won the game!");
+    } else if (time === 0) {
+      alert("Time's up! You lost the game.");
+    }
+  };
+
+  useEffect(() => {
+    const timer = startTimer();
+
+    return () => {
+      clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (time === 0 || matchedCards.length === cards.length) {
+      checkGameStatus();
+    }
+  }, [time, matchedCards, cards]);
+
+  const formatTime = (time) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = time % 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
+
   return (
     <div>
       <div>
@@ -235,6 +296,13 @@ const Game = () => {
           </div>
         ))}
       </div>
+      <div>Time: {time}</div>
+      {matchedCards.length === cards.length && (
+        <div>
+          <p>Game completed in {turns} turns</p>
+          <p>Time taken: {formatTime(completedTime)}</p>
+        </div>
+      )}
     </div>
   );
 };
