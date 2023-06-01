@@ -29,6 +29,9 @@ const Game = () => {
   const [time, setTime] = useState(120);
   const [turns, setTurns] = useState(0);
   const [completedTime, setCompletedTime] = useState(null);
+  const [gameWon, setGameWon] = useState(false);
+  const [gameLost, setGameLost] = useState(false);
+  const [timerRunning, setTimerRunning] = useState(true);
 
   const generateCards = useCallback(() => {
     const contentArray =
@@ -110,7 +113,6 @@ const Game = () => {
 
     setCards(newCards);
     setSelectedCards([...selectedCards, card]);
-    setTurns(turns + 1);
 
     if (selectedCards.length === 1) {
       if (selectedCards[0].content === card.content) {
@@ -126,14 +128,13 @@ const Game = () => {
 
         setCards(updatedCards);
         setSelectedCards([]);
-        setTurn(turn + 1);
-
         if (matchedCards.length === cards.length - 2) {
           setCompletedTime(120 - time);
           checkGameStatus();
         }
       }, 1000);
     }
+    setTurn(turn + 1);
   };
 
   const renderCardContent = (card) => {
@@ -161,7 +162,10 @@ const Game = () => {
     setMatchedCards([]);
     setSelectedCards([]);
     setTurn(1);
+    setGameWon(false);
+    setGameLost(false);
   };
+
   const getIconComponent = (name) => {
     switch (name) {
       case "AcUnitIcon":
@@ -211,29 +215,42 @@ const Game = () => {
     setMatchedCards([]);
     setSelectedCards([]);
     setTurn(1);
+    setGameWon(false);
+    setGameLost(false);
   };
-
   const startTimer = () => {
     const timer = setInterval(() => {
-      setTime((prevTime) => prevTime - 1);
+      setTime((prevTime) => {
+        if (prevTime === 0) {
+          setTimerRunning(false);
+          clearInterval(timer);
+        }
+        return prevTime - 1;
+      });
     }, 1000);
 
     return timer;
   };
 
   useEffect(() => {
-    const timer = startTimer();
+    let timer;
+    if (timerRunning) {
+      timer = startTimer();
+    }
 
     return () => {
       clearInterval(timer);
     };
-  }, []);
+  }, [timerRunning]);
 
   const checkGameStatus = () => {
     if (matchedCards.length === cards.length) {
-      alert("Congratulations! You won the game!");
+      setGameWon(true);
+      setCompletedTime(120 - time);
+      setTimerRunning(false); // Stop the timer
     } else if (time === 0) {
-      alert("Time's up! You lost the game.");
+      setGameLost(true);
+      setTimerRunning(false); // Stop the timer
     }
   };
 
@@ -296,11 +313,16 @@ const Game = () => {
           </div>
         ))}
       </div>
-      <div>Time: {time}</div>
-      {matchedCards.length === cards.length && (
+      <div>Time: {time >= 0 ? formatTime(time) : "0:00"}</div>
+      {gameWon && matchedCards.length === cards.length && (
         <div>
-          <p>Game completed in {turns} turns</p>
+          <p>Game completed in {turn} turns</p>
           <p>Time taken: {formatTime(completedTime)}</p>
+        </div>
+      )}
+      {gameLost && time === 0 && (
+        <div>
+          <p>Time's up! You lost the game.</p>
         </div>
       )}
     </div>
