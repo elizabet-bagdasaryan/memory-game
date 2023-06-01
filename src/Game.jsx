@@ -133,8 +133,8 @@ const Game = () => {
           checkGameStatus();
         }
       }, 1000);
+      setTurns(turns + 1); // Increment the turns count
     }
-    setTurn(turn + 1);
   };
 
   const renderCardContent = (card) => {
@@ -247,10 +247,10 @@ const Game = () => {
     if (matchedCards.length === cards.length) {
       setGameWon(true);
       setCompletedTime(120 - time);
-      setTimerRunning(false); // Stop the timer
+      setTimerRunning(false);
     } else if (time === 0) {
       setGameLost(true);
-      setTimerRunning(false); // Stop the timer
+      setTimerRunning(false);
     }
   };
 
@@ -299,7 +299,7 @@ const Game = () => {
           </button>
         </div>
       </div>
-      <div>Turn: {turn}</div>
+      <div>Turn: {turns}</div>
       <div className={`grid grid-${gridSize}`}>
         {cards.map((card) => (
           <div
