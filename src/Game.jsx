@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import "./Game.css";
+import React, { useState, useEffect } from "react";
+import shuffle from "lodash.shuffle";
 import AcUnitIcon from "@mui/icons-material/AcUnit";
 import NightsStayIcon from "@mui/icons-material/NightsStay";
 import FlashOnIcon from "@mui/icons-material/FlashOn";
@@ -18,49 +18,26 @@ import LocalFireDepartmentIcon from "@mui/icons-material/LocalFireDepartment";
 import LunchDiningIcon from "@mui/icons-material/LunchDining";
 import ThermostatIcon from "@mui/icons-material/Thermostat";
 import PublicIcon from "@mui/icons-material/Public";
+import "./Game.css";
 
-const Game = () => {
+const Game = ({ gridSize, cardType }) => {
   const [cards, setCards] = useState([]);
   const [selectedCards, setSelectedCards] = useState([]);
   const [matchedCards, setMatchedCards] = useState([]);
-  const [turn, setTurn] = useState(1);
-  const [cardType, setCardType] = useState("icons");
-  const [gridSize, setGridSize] = useState(4);
-  const [time, setTime] = useState(120);
-  const [turns, setTurns] = useState(0);
-  const [completedTime, setCompletedTime] = useState(null);
   const [gameWon, setGameWon] = useState(false);
   const [gameLost, setGameLost] = useState(false);
+  const [time, setTime] = useState(120);
   const [timerRunning, setTimerRunning] = useState(true);
-
-  const generateCards = useCallback(() => {
-    const contentArray =
-      cardType === "icons" ? generateIconArray() : generateNumberArray();
-    const cards = [];
-
-    for (let i = 0; i < (gridSize * gridSize) / 2; i++) {
-      const card = { id: i * 2, content: contentArray[i], isFlipped: false };
-      cards.push(card, { ...card, id: i * 2 + 1 });
-    }
-
-    const shuffledCards = shuffleArray(cards);
-    setCards(shuffledCards);
-  }, [gridSize, cardType]);
+  const [completedTime, setCompletedTime] = useState(0);
+  const [turns, setTurns] = useState(0);
+  const [currentPlayer, setCurrentPlayer] = useState(1);
+  const [gameMode, setGameMode] = useState("single");
 
   useEffect(() => {
     generateCards();
-  }, [generateCards, gridSize]);
+  }, []);
 
-  const shuffleArray = (array) => {
-    const newArray = [...array];
-    for (let i = newArray.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-    }
-    return newArray;
-  };
-
-  const generateIconArray = () => {
+  const generateCards = () => {
     const icons = [
       "AcUnitIcon",
       "NightsStayIcon",
@@ -79,254 +56,223 @@ const Game = () => {
       "LocalFireDepartmentIcon",
       "LunchDiningIcon",
       "ThermostatIcon",
-      "PublicIcon ",
+      "PublicIcon",
     ];
 
-    const selectedIcons = icons.slice(0, (gridSize * gridSize) / 2);
+    const selectedIcons = generateIconArray(icons);
+    const selectedNumbers = generateNumberArray();
 
-    return selectedIcons;
+    const selectedContent =
+      cardType === "icons" ? selectedIcons : selectedNumbers;
+
+    const newCards = Array.from(
+      { length: gridSize * gridSize },
+      (_, index) => ({
+        id: index,
+        content: selectedContent[index],
+        isFlipped: false,
+      })
+    );
+
+    setCards(shuffle(newCards));
+  };
+
+  const generateIconArray = (icons) => {
+    icons = icons.slice(0, (gridSize * gridSize) / 2);
+    return shuffle([...icons, ...icons]);
   };
 
   const generateNumberArray = () => {
-    const numbers = Array.from(Array((gridSize * gridSize) / 2).keys()).map(
-      (num) => (num + 1).toString()
+    const numbers = Array.from(
+      { length: (gridSize * gridSize) / 2 },
+      (_, index) => index + 1
     );
-
-    return numbers;
+    return shuffle([...numbers, ...numbers]);
   };
 
-  const handleCardClick = (card) => {
-    if (selectedCards.length === 2 || matchedCards.includes(card.id)) {
-      return;
-    }
+  const handleCardClick = (clickedCard) => {
+    if (!clickedCard.isFlipped && selectedCards.length < 2) {
+      const updatedCards = cards.map((card) =>
+        card.id === clickedCard.id ? { ...card, isFlipped: true } : card
+      );
+      setCards(updatedCards);
+      setSelectedCards([...selectedCards, clickedCard]);
 
-    if (selectedCards.some((selectedCard) => selectedCard.id === card.id)) {
-      return;
-    }
-
-    const newCards = cards.map((c) => {
-      if (c.id === card.id) {
-        return { ...c, isFlipped: true };
+      if (selectedCards.length === 1) {
+        setTimeout(checkForMatch, 1000);
       }
-      return c;
-    });
-
-    setCards(newCards);
-    setSelectedCards([...selectedCards, card]);
-
-    if (selectedCards.length === 1) {
-      if (selectedCards[0].content === card.content) {
-        setMatchedCards([...matchedCards, selectedCards[0].id, card.id]);
-      }
-      setTimeout(() => {
-        const updatedCards = cards.map((c) => {
-          if (!matchedCards.includes(c.id)) {
-            return { ...c, isFlipped: false };
-          }
-          return c;
-        });
-
-        setCards(updatedCards);
-        setSelectedCards([]);
-        if (matchedCards.length === cards.length - 2) {
-          setCompletedTime(120 - time);
-          checkGameStatus();
-        }
-      }, 1000);
-      setTurns(turns + 1); // Increment the turns count
     }
   };
 
-  const renderCardContent = (card) => {
-    if (matchedCards.includes(card.id)) {
-      if (cardType === "icons") {
-        const IconComponent = getIconComponent(card.content);
-        return <IconComponent />;
-      } else if (cardType === "numbers") {
-        return <span>{card.content}</span>;
-      }
-    } else if (card.isFlipped) {
-      if (cardType === "icons") {
-        const IconComponent = getIconComponent(card.content);
-        return <IconComponent />;
-      } else if (cardType === "numbers") {
-        return <span>{card.content}</span>;
-      }
-    }
-    return <span></span>;
-  };
+  const checkForMatch = () => {
+    const [card1, card2] = selectedCards;
 
-  const handleCardTypeChange = (type) => {
-    setCardType(type);
-    generateCards();
-    setMatchedCards([]);
+    if (card1.content === card2.content) {
+      setMatchedCards([...matchedCards, card1.id, card2.id]);
+
+      if (matchedCards.length + 2 === cards.length) {
+        setGameWon(true);
+        setTimerRunning(false);
+        setCompletedTime(120 - time);
+      }
+    } else {
+      const updatedCards = cards.map((card) =>
+        card.id === card1.id || card.id === card2.id
+          ? { ...card, isFlipped: false }
+          : card
+      );
+      setCards(updatedCards);
+    }
+
     setSelectedCards([]);
-    setTurn(1);
-    setGameWon(false);
-    setGameLost(false);
-  };
+    setTurns(turns + 1);
 
-  const getIconComponent = (name) => {
-    switch (name) {
-      case "AcUnitIcon":
-        return AcUnitIcon;
-      case "NightsStayIcon":
-        return NightsStayIcon;
-      case "FlashOnIcon":
-        return FlashOnIcon;
-      case "CloudIcon":
-        return CloudIcon;
-      case "TerrainIcon":
-        return TerrainIcon;
-      case "StarRateIcon":
-        return StarRateIcon;
-      case "WbSunnyIcon":
-        return WbSunnyIcon;
-      case "TsunamiIcon":
-        return TsunamiIcon;
-      case "SportsBasketballIcon":
-        return SportsBasketballIcon;
-      case "SportsBarIcon":
-        return SportsBarIcon;
-      case "ThunderstormIcon":
-        return ThunderstormIcon;
-      case "LightbulbIcon":
-        return LightbulbIcon;
-      case "FavoriteIcon":
-        return FavoriteIcon;
-      case "ExtensionIcon":
-        return ExtensionIcon;
-      case "LocalFireDepartmentIcon":
-        return LocalFireDepartmentIcon;
-      case "LunchDiningIcon":
-        return LunchDiningIcon;
-      case "ThermostatIcon":
-        return ThermostatIcon;
-      case "PublicIcon ":
-        return PublicIcon;
-      default:
-        return null;
+    if (gameMode === "two-players") {
+      setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
     }
-  };
-
-  const handleGridSizeChange = (size) => {
-    setGridSize(size);
-    generateCards();
-    setMatchedCards([]);
-    setSelectedCards([]);
-    setTurn(1);
-    setGameWon(false);
-    setGameLost(false);
-  };
-  const startTimer = () => {
-    const timer = setInterval(() => {
-      setTime((prevTime) => {
-        if (prevTime === 0) {
-          setTimerRunning(false);
-          clearInterval(timer);
-        }
-        return prevTime - 1;
-      });
-    }, 1000);
-
-    return timer;
   };
 
   useEffect(() => {
-    let timer;
     if (timerRunning) {
-      timer = startTimer();
-    }
+      const timer = setInterval(() => {
+        setTime((prevTime) => prevTime - 1);
+      }, 1000);
 
-    return () => {
-      clearInterval(timer);
-    };
-  }, [timerRunning]);
+      if (time === 0) {
+        setGameLost(true);
+        setTimerRunning(false);
+      }
 
-  const checkGameStatus = () => {
-    if (matchedCards.length === cards.length) {
-      setGameWon(true);
-      setCompletedTime(120 - time);
-      setTimerRunning(false);
-    } else if (time === 0) {
-      setGameLost(true);
-      setTimerRunning(false);
+      return () => {
+        clearInterval(timer);
+      };
     }
+  }, [timerRunning, time]);
+
+  const resetGame = () => {
+    setCards([]);
+    setSelectedCards([]);
+    setMatchedCards([]);
+    setGameWon(false);
+    setGameLost(false);
+    setTime(120);
+    setTimerRunning(true);
+    setCompletedTime(0);
+    setTurns(0);
+    setCurrentPlayer(1);
+    generateCards();
   };
 
-  useEffect(() => {
-    const timer = startTimer();
-
-    return () => {
-      clearInterval(timer);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (time === 0 || matchedCards.length === cards.length) {
-      checkGameStatus();
-    }
-  }, [time, matchedCards, cards]);
-
-  const formatTime = (time) => {
-    const minutes = Math.floor(time / 60);
-    const seconds = time % 60;
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  const handleModeSwitch = () => {
+    setGameMode(gameMode === "single" ? "two-players" : "single");
   };
 
   return (
-    <div>
-      <div>
-        <button onClick={() => handleCardTypeChange("icons")}>
-          Show Icons
-        </button>
-        <button onClick={() => handleCardTypeChange("numbers")}>
-          Show Numbers
-        </button>
-        <div>
-          Grid Size:{" "}
-          <button
-            className={gridSize === 4 ? "selected" : ""}
-            onClick={() => handleGridSizeChange(4)}
-          >
-            4x4
-          </button>
-          <button
-            className={gridSize === 6 ? "selected" : ""}
-            onClick={() => handleGridSizeChange(6)}
-          >
-            6x6
-          </button>
+    <div className="game-container">
+      <div className="game-header">
+        <div className="game-info">
+          <span className="game-mode">
+            {gameMode === "single" ? "Single Player Mode" : "Two Players Mode"}
+          </span>
+          <span className="game-turns">
+            Turns: {turns} | Player: {currentPlayer}
+          </span>
+          <span className="game-timer">Time: {time}</span>
+        </div>
+        <div className="game-options">
+          <div className="switch-mode">
+            <button className="switch-button" onClick={handleModeSwitch}>
+              {gameMode === "single"
+                ? "Switch to Two Players"
+                : "Switch to Single Player"}
+            </button>
+          </div>
         </div>
       </div>
-      <div>Turn: {turns}</div>
-      <div className={`grid grid-${gridSize}`}>
+      <div className={`cards-grid grid-${gridSize}`}>
         {cards.map((card) => (
           <div
             key={card.id}
-            className={`card ${
-              selectedCards.includes(card) ? "selected" : ""
-            } ${matchedCards.includes(card.id) ? "matched" : ""}`}
+            className={`card ${card.isFlipped ? "flipped" : ""}`}
             onClick={() => handleCardClick(card)}
           >
-            {renderCardContent(card)}
+            <div className="card-front"></div>
+            <div className="card-back">
+              {card.isFlipped &&
+                (cardType === "icons" ? (
+                  renderIcon(card.content)
+                ) : (
+                  <span className="card-number">{card.content}</span>
+                ))}
+            </div>
           </div>
         ))}
       </div>
-      <div>Time: {time >= 0 ? formatTime(time) : "0:00"}</div>
-      {gameWon && matchedCards.length === cards.length && (
-        <div>
-          <p>Game completed in {turn} turns</p>
-          <p>Time taken: {formatTime(completedTime)}</p>
-        </div>
-      )}
-      {gameLost && time === 0 && (
-        <div>
-          <p>Time's up! You lost the game.</p>
-        </div>
-      )}
+      <div className="game-footer">
+        {gameWon && (
+          <div className="game-message">
+            <h2>Congratulations!</h2>
+            <p>You completed the game in {completedTime} seconds.</p>
+            <button className="reset-button" onClick={resetGame}>
+              Play Again
+            </button>
+          </div>
+        )}
+        {gameLost && (
+          <div className="game-message">
+            <h2>Time's Up!</h2>
+            <p>You ran out of time.</p>
+            <button className="reset-button" onClick={resetGame}>
+              Try Again
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
+};
+
+const renderIcon = (icon) => {
+  switch (icon) {
+    case "AcUnitIcon":
+      return <AcUnitIcon />;
+    case "NightsStayIcon":
+      return <NightsStayIcon />;
+    case "FlashOnIcon":
+      return <FlashOnIcon />;
+    case "CloudIcon":
+      return <CloudIcon />;
+    case "TerrainIcon":
+      return <TerrainIcon />;
+    case "StarRateIcon":
+      return <StarRateIcon />;
+    case "WbSunnyIcon":
+      return <WbSunnyIcon />;
+    case "TsunamiIcon":
+      return <TsunamiIcon />;
+    case "SportsBasketballIcon":
+      return <SportsBasketballIcon />;
+    case "SportsBarIcon":
+      return <SportsBarIcon />;
+    case "ThunderstormIcon":
+      return <ThunderstormIcon />;
+    case "LightbulbIcon":
+      return <LightbulbIcon />;
+    case "FavoriteIcon":
+      return <FavoriteIcon />;
+    case "ExtensionIcon":
+      return <ExtensionIcon />;
+    case "LocalFireDepartmentIcon":
+      return <LocalFireDepartmentIcon />;
+    case "LunchDiningIcon":
+      return <LunchDiningIcon />;
+    case "ThermostatIcon":
+      return <ThermostatIcon />;
+    case "PublicIcon":
+      return <PublicIcon />;
+    default:
+      return null;
+  }
 };
 
 export default Game;
