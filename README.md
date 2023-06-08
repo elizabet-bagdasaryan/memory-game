@@ -43,4 +43,4 @@ Please ensure that your code follows the existing coding style and includes appr
 
 If you have any questions, suggestions, or issues regarding this application, please feel free to contact me at [elizabet.bagdasaryan1@gmail.com].
 
-Project Link: 
+Project Link: https://elizabets-memory-game.netlify.app/
