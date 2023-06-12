@@ -39,6 +39,10 @@ const Game = () => {
   const [winner, setWinner] = useState(null);
   const [player1Matches, setPlayer1Matches] = useState(0);
   const [player2Matches, setPlayer2Matches] = useState(0);
+  const [numPlayers, setNumPlayers] = useState(2);
+  const [playerTurns, setPlayerTurns] = useState(Array(numPlayers).fill(0));
+  const [playerMatches, setPlayerMatches] = useState(Array(numPlayers).fill(0));
+  const [winningPlayer, setWinningPlayer] = useState(null);
 
   const generateCards = useCallback(() => {
     const contentArray =
@@ -123,33 +127,48 @@ const Game = () => {
 
     if (selectedCards.length === 1) {
       if (selectedCards[0].content === card.content) {
-        setMatchedCards([...matchedCards, selectedCards[0].id, card.id]);
-      }
-      setTimeout(() => {
-        const updatedCards = cards.map((c) => {
-          if (!matchedCards.includes(c.id)) {
-            return { ...c, isFlipped: false };
-          }
-          return c;
-        });
-
-        setCards(updatedCards);
+        const updatedMatches = [...matchedCards, selectedCards[0].id, card.id];
+        setMatchedCards(updatedMatches);
         setSelectedCards([]);
-        if (matchedCards.length === cards.length - 2) {
+
+        if (updatedMatches.length === cards.length) {
           setCompletedTime(120 - time);
           checkGameStatus();
         }
-      }, 1000);
+      } else {
+        setTimeout(() => {
+          const updatedCards = newCards.map((c) => {
+            if (!matchedCards.includes(c.id)) {
+              return { ...c, isFlipped: false };
+            }
+            return c;
+          });
+
+          setCards(updatedCards);
+          setSelectedCards([]);
+        }, 1000);
+      }
 
       if (gameMode === "singleplayer") {
-        setTurns(turns + 1);
+        setTurns((prevTurns) => prevTurns + 1);
       } else if (gameMode === "multiplayer") {
-        if (currentPlayer === 1) {
-          setPlayer1Turns((prevTurns) => prevTurns + 1);
-        } else {
-          setPlayer2Turns((prevTurns) => prevTurns + 1);
+        const currentPlayerTurns = playerTurns[currentPlayer - 1] + 1;
+        const currentPlayerMatches = playerMatches[currentPlayer - 1];
+
+        if (selectedCards[0].content === card.content) {
+          const updatedMatches = [...playerMatches];
+          updatedMatches[currentPlayer - 1] = currentPlayerMatches + 1;
+          setPlayerMatches(updatedMatches);
+          setSelectedCards([]);
         }
-        setCurrentPlayer((prevPlayer) => (prevPlayer === 1 ? 2 : 1));
+
+        const updatedTurns = [...playerTurns];
+        updatedTurns[currentPlayer - 1] = currentPlayerTurns;
+        setPlayerTurns(updatedTurns);
+
+        setCurrentPlayer((prevPlayer) =>
+          prevPlayer === numPlayers ? 1 : prevPlayer + 1
+        );
       }
     }
   };
@@ -260,33 +279,33 @@ const Game = () => {
     };
   }, [timerRunning]);
 
-  // ...
   const checkGameStatus = () => {
     if (matchedCards.length === cards.length) {
       setGameWon(true);
       setCompletedTime(120 - time);
       setTimerRunning(false);
 
-      // Multiplayer mode: Determine the winner based on the number of matched cards
       if (gameMode === "multiplayer") {
-        let winner;
-        if (player1Matches > player2Matches) {
-          winner = "Player 1";
-        } else if (player2Matches > player1Matches) {
-          winner = "Player 2";
+        let winningPlayer;
+        let maxMatches = Math.max(...playerMatches);
+
+        if (
+          playerMatches.filter((matches) => matches === maxMatches).length === 1
+        ) {
+          winningPlayer = playerMatches.indexOf(maxMatches) + 1;
         } else {
-          winner = "It's a tie!";
+          winningPlayer = null;
         }
 
-        setWinner(winner);
+        setWinningPlayer(winningPlayer);
       }
     } else if (time === 0) {
       setGameLost(true);
       setTimerRunning(false);
+    } else if (gameWon) {
+      setTimerRunning(false);
     }
   };
-
-  // ...
 
   useEffect(() => {
     const timer = startTimer();
@@ -309,50 +328,36 @@ const Game = () => {
   };
 
   const handleGameModeChange = (mode) => {
+    let players = 2;
+    if (mode === "3players") {
+      players = 3;
+    } else if (mode === "4players") {
+      players = 4;
+    }
+
     setGameMode(mode);
     setMatchedCards([]);
     setSelectedCards([]);
     setGameWon(null);
     setGameLost(false);
     setTimerRunning(true);
-
-    setFlippedCards([]);
     setCurrentPlayer(1);
-    setPlayer1Turns(0);
-    setPlayer2Turns(0);
+    setNumPlayers(players);
+    setPlayerTurns(Array(players).fill(0));
+    setPlayerMatches(Array(players).fill(0));
 
     if (mode === "multiplayer") {
-      setTimerRunning(false); // Stop the timer in multiplayer mode
+      setTimerRunning(false);
     } else {
-      setTimerRunning(true); // Resume the timer in singleplayer mode
+      setTimerRunning(true);
     }
   };
 
-  const getWinner = () => {
-    const player1Matched = matchedCards.filter((id) => id % 2 === 0).length;
-    const player2Matched = matchedCards.filter((id) => id % 2 !== 0).length;
-
-    let winner;
-    if (player1Matched > player2Matched) {
-      winner = "Player 1";
-    } else if (player2Matched > player1Matched) {
-      winner = "Player 2";
-    } else {
-      winner = "It's a tie!";
-    }
-
-    setWinner(winner);
-  };
   const handleCardFlip = (cardId) => {
-    // ...
-
-    // Multiplayer mode: Track the number of matches for each player
     if (gameMode === "multiplayer") {
       if (flippedCards.length === 2) {
-        if (flippedCards[0].id !== flippedCards[1].id) {
-          setPlayerTurn(playerTurn === "Player 1" ? "Player 2" : "Player 1");
-        } else {
-          if (playerTurn === "Player 1") {
+        if (flippedCards[0].content === flippedCards[1].content) {
+          if (currentPlayer === 1) {
             setPlayer1Matches((prevMatches) => prevMatches + 1);
           } else {
             setPlayer2Matches((prevMatches) => prevMatches + 1);
@@ -393,25 +398,42 @@ const Game = () => {
         <button onClick={() => handleGameModeChange("multiplayer")}>
           Multiplayer
         </button>
+        <button onClick={() => handleGameModeChange("3players")}>
+          3 Players
+        </button>
+        <button onClick={() => handleGameModeChange("4players")}>
+          4 Players
+        </button>
       </div>
 
       {gameMode === "singleplayer" && <div>Turn: {turns}</div>}
       {gameMode === "multiplayer" && (
         <div>
-          <div>Player 1: {player1Turns}</div>
-          <div>Player 2: {player2Turns}</div>
+          {playerTurns.map((turns, index) => (
+            <div key={index}>
+              Player {index + 1}: {turns} turns, {playerMatches[index]} matches
+            </div>
+          ))}
         </div>
       )}
-
+      {gameMode === "3players" && (
+        <div>
+          {playerTurns.map((turns, index) => (
+            <div key={index}>
+              Player {index + 1}: {turns} turns, {playerMatches[index]} matches
+            </div>
+          ))}
+        </div>
+      )}
       {gameMode === "multiplayer" && <div>Current Player: {currentPlayer}</div>}
 
       <div className={`grid grid-${gridSize}`}>
         {cards.map((card) => (
           <div
             key={card.id}
-            className={`card ${
-              selectedCards.includes(card) ? "selected" : ""
-            } ${matchedCards.includes(card.id) ? "matched" : ""}`}
+            className={`card ${card.selected ? "selected-card" : ""} ${
+              matchedCards.includes(card.id) ? "matched" : ""
+            }`}
             onClick={() => handleCardClick(card)}
           >
             {renderCardContent(card)}
@@ -430,7 +452,17 @@ const Game = () => {
             </>
           ) : (
             <>
-              <p>Winner: {winner}</p>
+              {gameWon &&
+                matchedCards.length === cards.length &&
+                gameMode === "multiplayer" && (
+                  <>
+                    {winningPlayer ? (
+                      <div>Player {winningPlayer} wins!</div>
+                    ) : (
+                      <div>It's a tie!</div>
+                    )}
+                  </>
+                )}
             </>
           )}
         </div>

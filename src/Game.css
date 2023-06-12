@@ -28,3 +28,7 @@
 .card.matched {
   background-color: #bcced9;
 }
+
+.selected-card {
+  background-color: #fda214;
+}
