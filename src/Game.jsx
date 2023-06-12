@@ -366,8 +366,37 @@ const Game = () => {
       }
     }
   };
+  const handleRestart = () => {
+    setCards([]);
+    setSelectedCards([]);
+    setMatchedCards([]);
+    setTurn(1);
+    setCardType("icons");
+    setGridSize(4);
+    setTime(120);
+    setTurns(0);
+    setCompletedTime(null);
+    setGameWon(false);
+    setGameLost(false);
+    setTimerRunning(true);
+    setCurrentPlayer(1);
+    setGameMode("singleplayer");
+    setPlayer1Turns(0);
+    setPlayer2Turns(0);
+    setWinner(null);
+    setPlayer1Matches(0);
+    setPlayer2Matches(0);
+    setNumPlayers(2);
+    setPlayerTurns(Array(numPlayers).fill(0));
+    setPlayerMatches(Array(numPlayers).fill(0));
+    setWinningPlayer(null);
+
+    generateCards();
+  };
+
   return (
     <div>
+      <button onClick={handleRestart}>Restart</button>
       <div>
         <button onClick={() => handleCardTypeChange("icons")}>
           Show Icons
@@ -396,7 +425,7 @@ const Game = () => {
           Single Player
         </button>
         <button onClick={() => handleGameModeChange("multiplayer")}>
-          Multiplayer
+          2 Players
         </button>
         <button onClick={() => handleGameModeChange("3players")}>
           3 Players
@@ -417,6 +446,16 @@ const Game = () => {
         </div>
       )}
       {gameMode === "3players" && (
+        <div>
+          {playerTurns.map((turns, index) => (
+            <div key={index}>
+              Player {index + 1}: {turns} turns, {playerMatches[index]} matches
+            </div>
+          ))}
+        </div>
+      )}
+
+      {gameMode === "4players" && (
         <div>
           {playerTurns.map((turns, index) => (
             <div key={index}>
